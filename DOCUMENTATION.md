@@ -4,22 +4,58 @@ For Windows:
 
 For Mac:
 
----
+1. Follow the repo instructions
 
-## Get MagicMirror
-
-0. open terminal
-1. install Brew : `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-   1b. update your bash_profile or restart your terminal
-2. install Node via brew: `brew install -g node`
-3. install NPM via brew: `brew install -g npm`
+For Raspberry Pi Zero W
 
 ---
 
-## Get MMM-CalendarExt3
+## Get the basics
 
-1. cd ~/MagicMirror/modules
-2. git clone https://github.com/MMRIZE/MMM-CalendarExt3
-3. cd MMM-CalendarExt3
-4. npm install
-5. git submodule update --init --recursive
+Download NVM and point it to unofficial nodejs mirror
+`curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash`
+`echo "export NVM_NODEJS_ORG_MIRROR=https://unofficial-builds.nodejs.org/download/release" >> ~/.bashr`
+
+Install the proper Node and Npm
+`nvm install 20.9.0`
+`nvm use 20.9.0`
+
+Verify the proper Node and Npm
+`node -v`
+`npm -v`
+
+Install git
+`sudo apt install git`
+
+---
+
+## Setup the repo
+
+Download and install MagicMirror
+`git clone https://github.com/abeatte/MagicMirror.git`
+`cd MagicMirror/`
+`npm run install-mm`
+
+Setup the custom modules (optional)
+`cd modules/`
+`git clone https://github.com/MMRIZE/MMM-CalendarExt3`
+`cd MMM-CalendarExt3/`
+`npm install`
+`git submodule update --init --recursive`
+`cd ../..`
+
+Add your config
+`cd config/`
+
+# put your config here
+
+`cd ..`
+
+---
+
+## Start the server
+
+`npm install`
+`npm run server`
+
+---
