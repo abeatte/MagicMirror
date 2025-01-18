@@ -60,27 +60,28 @@ fi
 
 cd MagicMirror
 
-# Get Module(s)
-
-# Get MMM-CalendarExt3 Module
-if ! [ -d "MMM-CalendarExt3" ]; then
-    echo "Cloning from MMM-CalendarExt3 Git repo..."
-
-    cd modules
-
-    git clone https://github.com/MMRIZE/MMM-CalendarExt3
-    cd MMM-CalendarExt3
-    npm install
-    git submodule update --init --recursive
-    cd ../..
-fi
-
-# Build the config
+# Build the config (and get modules as needed)
 
 calendarCount=0
 calendars=""
 
 read -p "Do you have a calendar to add? (y or n) " addCalendar
+
+if [ "$addCalendar" == "y" ]; then
+    # Get MMM-CalendarExt3 Module
+    if ! [ -d "MMM-CalendarExt3" ]; then
+        echo "Cloning from MMM-CalendarExt3 Git repo..."
+
+        cd modules
+
+        git clone https://github.com/MMRIZE/MMM-CalendarExt3
+        cd MMM-CalendarExt3
+        npm install
+        git submodule update --init --recursive
+        cd ../..
+    fi
+fi
+
 while [ "$addCalendar" == "y" ]; do
     ((calendarCount++))
     read -p "Calendar Name (calendar${calendarCount}): " name
@@ -123,34 +124,10 @@ if [ -z "$lon" ]; then
     lon="2.294513493475159"
 fi
 
-modules="{
+modules="
+        {
 			module: \"clock\",
 			position: \"top_left\"
-		},
-		{
-			module: \"MMM-CalendarExt3\",
-			// header: \"The Family Schedule\",
-			position: \"bottom_bar\",
-			config: {
-				waitFetch: 60000, // once per minute
-				refreshInterval: 60000, // once per minute
-				displayWeatherTemp: true,
-				useSymbol: true,
-				useWeather: true,
-				maxEventLines: 4,
-				// calendarSet: [\"calendar1\", \"calendar2\", \"calendar3\"]
-				},		
-		},
-		{
-			module: \"calendar\",
-			// position: \"top_left\",
-			config: {
-				broadcastPastEvents: true,
-				fetchInterval:60*1000,
-				maximumNumberOfDays: 28,
-				calendars: [$calendars
-                ]
-			}
 		},
 		{
 			module: \"weather\",
@@ -173,8 +150,36 @@ modules="{
 				lon: $lon,
 				maxNumberOfDays: 14
 			}
+		},"
+
+if [ "$calendarCount" -gt 0 ]; then 
+    modules+="
+        {
+			module: \"calendar\",
+			// position: \"top_left\",
+			config: {
+				broadcastPastEvents: true,
+				fetchInterval:60*1000,
+				maximumNumberOfDays: 28,
+				calendars: [$calendars
+                ]
+			}
 		},
-"
+        {
+			module: \"MMM-CalendarExt3\",
+			// header: \"The Family Schedule\",
+			position: \"bottom_bar\",
+			config: {
+				waitFetch: 60000, // once per minute
+				refreshInterval: 60000, // once per minute
+				displayWeatherTemp: true,
+				useSymbol: true,
+				useWeather: true,
+				maxEventLines: 4,
+				// calendarSet: [\"calendar1\", \"calendar2\", \"calendar3\"]
+			},		
+		},"
+fi
 
 # Adding the config
 cd config
