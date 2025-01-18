@@ -5,9 +5,18 @@
 # (Dont forget to run `chmod +x easy_init.sh` to make this script executable) 
 
 # Intro
-# TODO: Splash screen
+echo "
+  ______                    _       _ _         _     
+ |  ____|                  (_)     (_| |       | |    
+ | |__   __ _ ___ _   _     _ _ __  _| |_   ___| |__  
+ |  __| / _\` / __| | | |   | | '_ \| | __| / __| '_ \ 
+ | |___| (_| \__ | |_| |   | | | | | | |_ _\__ | | | |
+ |______\__,_|___/\__, |   |_|_| |_|_|\__(_|___|_| |_|
+                   __/ ______                         
+                  |___|______|  By https://github.com/abeatte                      
+"
 echo "This script will install all the necessary files for Magic Mirror and additional modules."
-# TODO: By line
+echo ""
 
 # Root User Check
 if [[ $EUID -ne 0 ]]; then
@@ -48,35 +57,28 @@ if ! [ -d "MagicMirror" ]; then
     npm install
     cd ..
 fi
+
 cd MagicMirror
 
 # Get Module(s)
-cd modules
 
 # Get MMM-CalendarExt3 Module
 if ! [ -d "MMM-CalendarExt3" ]; then
     echo "Cloning from MMM-CalendarExt3 Git repo..."
 
+    cd modules
+
     git clone https://github.com/MMRIZE/MMM-CalendarExt3
     cd MMM-CalendarExt3
     npm install
     git submodule update --init --recursive
-    cd ..
+    cd ../..
 fi
 
-cd ..
-
-# Adding the config
-cd config
-if [ -f "config.js" ]; then
-    rm config.js.bak
-    cp config.js config.js.bak
-    rm config.js
-fi
+# Build the config
 
 calendarCount=0
-calendars="
-"
+calendars=""
 
 read -p "Do you have a calendar to add? (y or n) " addCalendar
 while [ "$addCalendar" == "y" ]; do
@@ -101,28 +103,86 @@ while [ "$addCalendar" == "y" ]; do
         url="https://calendar.google.com/calendar/embed?src=en.usa%23holiday%40group.v.calendar.google.com&ctz=America%2FLos_Angeles"
     fi
 
-    calendars+='{ symbol: "'"${symbol}"'", color: "'"${color}"'", name: "'"${name}"'", url: "'"${url}"'" }'
+    calendars+='
+                    { name: "'"${name}"'", symbol: "'"${symbol}"'", color: "'"${color}"'", url: "'"${url}"'" },'
 
     read -p "Do you have another calendar to add? (y or n)" addCalendar
-    if [ "$addCalendar" == "y" ]; then
-        calendars+=",
-        "
-    fi
 done
 
-    echo ""
-    echo "For accurate weather input your latitude and longitude."
-    echo "An easy way to find your current coordinates is to use https://www.google.com/maps"
-    
-    read -p "latitude: " lat
-    if [ -z "$lat" ]; then
-        lat="48.85850415798338"
-    fi
+echo ""
+echo "For accurate weather input your latitude and longitude."
+echo "An easy way to find your current coordinates is to use https://www.google.com/maps"
 
-    read -p "longitude: " lon
-    if [ -z "$lon" ]; then
-        lon="2.294513493475159"
-    fi
+read -p "latitude: " lat
+if [ -z "$lat" ]; then
+    lat="48.85850415798338"
+fi
+
+read -p "longitude: " lon
+if [ -z "$lon" ]; then
+    lon="2.294513493475159"
+fi
+
+modules="{
+			module: \"clock\",
+			position: \"top_left\"
+		},
+		{
+			module: \"MMM-CalendarExt3\",
+			// header: \"The Family Schedule\",
+			position: \"bottom_bar\",
+			config: {
+				waitFetch: 60000, // once per minute
+				refreshInterval: 60000, // once per minute
+				displayWeatherTemp: true,
+				useSymbol: true,
+				useWeather: true,
+				maxEventLines: 4,
+				// calendarSet: [\"calendar1\", \"calendar2\", \"calendar3\"]
+				},		
+		},
+		{
+			module: \"calendar\",
+			// position: \"top_left\",
+			config: {
+				broadcastPastEvents: true,
+				fetchInterval:60*1000,
+				maximumNumberOfDays: 28,
+				calendars: [$calendars
+                ]
+			}
+		},
+		{
+			module: \"weather\",
+			position: \"top_right\",
+			config: {
+				weatherProvider: \"openmeteo\",
+				type: \"current\",
+				lat: $lat,
+				lon: $lon
+			}
+		},
+		{
+			module: \"weather\",
+			//position: \"null\",
+			header: \"Weather Forecast\",
+			config: {
+				weatherProvider: \"openmeteo\",
+				type: \"forecast\",
+				lat: $lat,
+				lon: $lon,
+				maxNumberOfDays: 14
+			}
+		},
+"
+
+# Adding the config
+cd config
+if [ -f "config.js" ]; then
+    rm config.js.bak
+    cp config.js config.js.bak
+    rm config.js
+fi
 
 echo "Writing to config.js..."
 
@@ -161,64 +221,16 @@ let config = {
 	timeFormat: 24,
 	units: "imperial",
 
-	modules: [
-		{
-			module: "clock",
-			position: "top_left"
-		},
-		{
-			module: "MMM-CalendarExt3",
-			// header: "The Family Schedule",
-			position: "bottom_bar",
-			config: {
-				waitFetch: 60000, // once per minute
-				refreshInterval: 60000, // once per minute
-				displayWeatherTemp: true,
-				useSymbol: true,
-				useWeather: true,
-				maxEventLines: 4,
-				// calendarSet: ["cal1", "cal2", "cal3"]
-				},		
-		},
-		{
-			module: "calendar",
-			// position: "top_left",
-			config: {
-				broadcastPastEvents: true,
-				fetchInterval:60*1000,
-				maximumNumberOfDays: 28,
-				calendars: [' "${calendars}" ']
-			}
-		},
-		{
-			module: "weather",
-			position: "top_right",
-			config: {
-				weatherProvider: "openmeteo",
-				type: "current",
-				lat: ' "${lat}" ',
-				lon: ' "${lon}" '
-			}
-		},
-		{
-			module: "weather",
-			//position: "null",
-			header: "Weather Forecast",
-			config: {
-				weatherProvider: "openmeteo",
-				type: "forecast",
-				lat: ' "${lat}" ',
-				lon: ' "${lon}" ',
-				maxNumberOfDays: 14
-			}
-		},
-	]
+	modules: [' "${modules}" '
+    ]
 };
 
 /*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") { module.exports = config; }' > config.js
 
 cd ..
+
+# Start Magic Mirror
 
 echo ""
 read -p "Would you like to start Magic Mirror with these configurations now? (y or n) " start
@@ -227,7 +239,6 @@ if [[ -z "$start" || "$start" != "y" ]]; then
     exit 0
 fi
 
-# Start Magic Mirror
 read -p "Do you want to start in 'display' or 'server' mode? (display) " mode
 if [[ "$mode" != "server" ]]; then
     mode="server"
