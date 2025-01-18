@@ -1,16 +1,23 @@
+---
 For Windows:
 
 1. Get a mac.
 
+---
+
+(Note: For easy Mac and Linux setup simply run `./easy_init.sh` from the directory you want the repro installed in)
+
+---
 For Mac:
 
 1. Follow the repo instructions
 
+---
 For Raspberry Pi Zero W
 
 ---
 
-## Get the basics
+## 1. Get the basics
 
 Download NVM and point it to unofficial nodejs mirror
 `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash`
@@ -29,7 +36,7 @@ Install git
 
 ---
 
-## Setup the repo
+## 2. Setup the repo
 
 Download and install MagicMirror
 `git clone https://github.com/abeatte/MagicMirror.git`
@@ -47,13 +54,13 @@ Setup the custom modules (optional)
 Add your config
 `cd config/`
 
-# put your config here
+# 3. put your config here
 
 `cd ..`
 
 ---
 
-## Start the server
+## 4. Start the server
 
 `npm install`
 `npm run server`
