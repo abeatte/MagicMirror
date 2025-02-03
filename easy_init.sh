@@ -60,13 +60,57 @@ fi
 
 cd MagicMirror
 
+existing_calendars=()
+existing_calendar_count=0
+weather_config="";
+
+# Adding the config
+cd config
+if [ -f "config.js" ]; then
+
+	# Check if jq is installed
+	if ! command -v jq &> /dev/null; then
+		echo "jq is not installed. Please install it using your package manager (e.g., brew install jq)"
+		exit 1
+	fi
+
+	# make a backup copy
+    rm config.js.bak
+    cp config.js config.js.bak
+
+	# inject ability to get JSON config
+	stringify_line="console.log(JSON.stringify(config).replace(/\"(\w+)\":/g, '\"\$1\":'));"
+	echo "$stringify_line" >> "config.js"
+	file_content=$(node config.js)
+	file_content=$(echo $file_content | tr "\"" "\\\"")
+
+	# Put back config.js without injected line(s)
+	rm config.js
+	cp config.js.bak config.js
+	
+	modules=$(echo "$file_content" | jq .modules)
+
+	calendars_module=$(echo "$modules" | jq '.[] | select(.module == "calendar").config.calendars')
+	existing_calendar_count=$(echo "$calendars_module" | jq length)
+	existing_calendar_count="${existing_calendar_count:="0"}"
+
+	weather_config=$(echo "$modules" | jq '(map(select(.module == "weather")) | first).config')
+
+	i=1
+	while [ $i -le $existing_calendar_count ]; do
+		index=$((i-1))
+		cal=$(echo "$calendars_module" | jq '.['$index']')
+		existing_calendars+=("$cal")
+		((i++))
+	done
+fi
+
 # Build the config (and get modules as needed)
 
-calendarCount=0
 calendars=""
+calendarCount=0
 
-read -p "Do you have a calendar to add? (y or n) " addCalendar
-
+read -p "Do you have calendar(s) to add? (y or n) " addCalendar
 if [ "$addCalendar" == "y" ]; then
     # Get MMM-CalendarExt3 Module
     if ! [ -d "MMM-CalendarExt3" ]; then
@@ -83,25 +127,36 @@ if [ "$addCalendar" == "y" ]; then
 fi
 
 while [ "$addCalendar" == "y" ]; do
+	calendar_index="$calendarCount"
     ((calendarCount++))
-    read -p "Calendar Name (calendar${calendarCount}): " name
+
+	existing_calendar="${existing_calendars[$calendar_index]}"
+	default_name=$(echo "$existing_calendar" | jq .name | tr -d '"')
+	default_name="${default_name:="calendar${calendarCount}"}"
+    read -p "Calendar Name (${default_name}): " name
     if [ -z "$name" ]; then
-        name="calendar${calendarCount}"
+        name="$default_name"
     fi
 
-    read -p "${name}'s calendar symbol (soccer-ball): " symbol
+	default_symbol=$(echo "$existing_calendar" | jq .symbol | tr -d '"')
+	default_symbol="${default_symbol:="soccer-ball"}"
+    read -p "${name}'s calendar symbol (${default_symbol}): " symbol
     if [ -z "$symbol" ]; then
-        symbol="soccer-ball"
+        symbol="$default_symbol"
     fi
 
-    read -p "${name}'s calendar color (blue): " color
+	default_color=$(echo "$existing_calendar" | jq .color | tr -d '"')
+	default_color="${default_color:="blue"}"
+    read -p "${name}'s calendar color (${default_color}): " color
     if [ -z "$color" ]; then
-        color="blue"
+        color="$default_color"
     fi
 
-    read -p "${name}'s calendar url: " url
+	default_url=$(echo "$existing_calendar" | jq .url | tr -d '"')
+    read -p "${name}'s calendar url ($default_url): " url
     if [ -z "$url" ]; then
-        url="https://calendar.google.com/calendar/embed?src=en.usa%23holiday%40group.v.calendar.google.com&ctz=America%2FLos_Angeles"
+		default_url="${default_url:="https://calendar.google.com/calendar/embed?src=en.usa%23holiday%40group.v.calendar.google.com&ctz=America%2FLos_Angeles"}"
+        url="${default_url}"
     fi
 
     calendars+='
@@ -114,14 +169,18 @@ echo ""
 echo "For accurate weather input your latitude and longitude."
 echo "An easy way to find your current coordinates is to use https://www.google.com/maps"
 
-read -p "latitude: " lat
+default_lat=$(echo "$weather_config" | jq .lat | tr -d '"')
+default_lat="${default_lat:="48.85850415798338"}"
+read -p "latitude ($default_lat): " lat
 if [ -z "$lat" ]; then
-    lat="48.85850415798338"
+    lat="${default_lat}"
 fi
 
-read -p "longitude: " lon
+default_lon=$(echo "$weather_config" | jq .lon | tr -d '"')
+default_lon="${default_lon:="2.294513493475159"}"
+read -p "longitude ($default_lon): " lon
 if [ -z "$lon" ]; then
-    lon="2.294513493475159"
+    lon="${default_lon}"
 fi
 
 modules="
